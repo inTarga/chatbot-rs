@@ -1,5 +1,5 @@
 [package]
-name = "chatbot-rs"
+name = "chatbot"
 version = "0.1.0"
 authors = ["Ingrid Rebecca Abraham <intarga@protonmail.com>"]
 edition = "2018"
