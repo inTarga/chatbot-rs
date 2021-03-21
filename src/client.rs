@@ -3,18 +3,15 @@
 //use std::net::Shutdown;
 //use std::process;
 
+use std::fmt;
 use std::io::{Write, stdout, Stdout};
-use termion::event::Key;
-use termion::input::Keys;
-use termion::input::TermRead;
-use termion::raw::IntoRawMode;
-use termion::raw::RawTerminal;
-use termion;
-use termion::cursor;
-use termion::clear;
-use termion::terminal_size;
 use std::thread;
 use std::time::Duration;
+use termion::event::Key;
+use termion::input::{Keys, TermRead};
+use termion::raw::{IntoRawMode, RawTerminal};
+use termion;
+use termion::{cursor, clear, terminal_size};
 
 pub fn run() {
     //Clear screen
@@ -29,9 +26,11 @@ pub fn run() {
     //Get stdin
     let mut stdin = termion::async_stdin().keys();
 
+    let mut msg_buf = Buf::init();
+
     loop {
-        redraw(&mut stdout, height, width);
-        let quit = handle_input(&mut stdin);
+        redraw(&mut stdout, height, width, &msg_buf);
+        let quit = handle_input(&mut stdin, &mut msg_buf);
 
         if quit {
             break;
@@ -40,25 +39,69 @@ pub fn run() {
     }
 }
 
-fn redraw(stdout: &mut RawTerminal<Stdout>, height: u16, width: u16) {
+fn redraw(stdout: &mut RawTerminal<Stdout>, height: u16, width: u16, msg_buf: &Buf) {
     //Draw divider
-    writeln!(stdout, "{}{}", cursor::Goto(0, height-2), "=".repeat(width.into())).unwrap();
-    writeln!(stdout, "{}Type your message here:", cursor::Goto(0, height-1)).unwrap();
+    write!(stdout, "{}{}{}",
+             cursor::Goto(0, height-2),
+             clear::CurrentLine,
+             "=".repeat(width.into()),
+    ).unwrap();
+    write!(stdout, "{}{}Type your message here:",
+             cursor::Goto(0, height-1),
+             clear::CurrentLine,
+    ).unwrap();
 
+    //Draw message buffer
+    write!(stdout, "{}{}{}",
+             cursor::Goto(0, height),
+             clear::CurrentLine,
+             msg_buf,
+    ).unwrap();
+
+    //Draw log
     for i in 0..height-3 {
-        writeln!(stdout, "{}message{}", cursor::Goto(0, height-(i+3)), i.to_string()).unwrap();
+        write!(stdout, "{}{}message{}",
+                 cursor::Goto(0, height-(i+3)),
+                 clear::CurrentLine,
+                 i.to_string(),
+        ).unwrap();
     }
+
+    stdout.flush().unwrap();
 }
 
-fn handle_input(keys: &mut Keys<termion::AsyncReader>) -> bool {
+fn handle_input(keys: &mut Keys<termion::AsyncReader>, msg_buf: &mut Buf) -> bool {
     let input = keys.next();
     if let Some(Ok(key)) = input {
         match key {
             //Key::Char('q') => process::exit(0),
-            Key::Char('q') => return true,
+            Key::Ctrl('c') => return true, //quit
+            Key::Char(c) => msg_buf.insert(c),
             _ => (),
         }
     }
     return false;
 }
 
+struct Buf {
+    buffer: [char; 1024],
+    head: usize,
+}
+
+impl Buf {
+    fn init() -> Buf {
+        Buf{buffer: [' '; 1024], head: 0}
+    }
+
+    fn insert(&mut self, c: char) {
+        self.buffer[self.head] = c;
+        self.head += 1;
+    }
+}
+
+impl fmt::Display for Buf {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let out = &self.buffer[0..self.head];
+        write!(f, "{}", out.into_iter().collect::<String>())
+    }
+}
