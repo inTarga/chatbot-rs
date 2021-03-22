@@ -90,6 +90,7 @@ fn handle_input(keys: &mut Keys<termion::AsyncReader>, msg_buf: &mut Buf) -> Opt
             Key::Ctrl('c') => return Some(Action::Quit),
             Key::Char('\n') => return Some(Action::Clear),
             Key::Char(c) => msg_buf.insert(c),
+            Key::Backspace => msg_buf.back(),
             _ => (),
         }
     }
@@ -117,7 +118,10 @@ impl Buf {
         self.head += 1;
     }
 
-    //TODO: fn back
+    fn back(&mut self) {
+        self.head -= 1;
+        self.buffer[self.head] = ' ';
+    }
 
     fn clear(&mut self) {
         for i in 0..(self.head) {
