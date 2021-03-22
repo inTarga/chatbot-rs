@@ -3,3 +3,5 @@
 [ ] chatbots
 [ ] colour/format chat output
 [ ] print controls
+[ ] better error handling
+[ ] logging
