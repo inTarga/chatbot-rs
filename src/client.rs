@@ -4,14 +4,14 @@
 //use std::process;
 
 use std::fmt;
-use std::io::{Write, stdout, Stdout};
+use std::io::{stdout, Stdout, Write};
 use std::thread;
 use std::time::Duration;
+use termion;
 use termion::event::Key;
 use termion::input::{Keys, TermRead};
 use termion::raw::{IntoRawMode, RawTerminal};
-use termion;
-use termion::{cursor, clear, terminal_size};
+use termion::{clear, cursor, terminal_size};
 
 pub fn run() {
     //Clear screen
@@ -48,36 +48,54 @@ pub fn run() {
     }
 }
 
-fn redraw(stdout: &mut RawTerminal<Stdout>, height: u16, width: u16, msg_buf: &Buf, msg_log: &Vec<String>) {
+fn redraw(
+    stdout: &mut RawTerminal<Stdout>,
+    height: u16,
+    width: u16,
+    msg_buf: &Buf,
+    msg_log: &Vec<String>,
+) {
     //Draw divider
-    write!(stdout, "{}{}{}",
-             cursor::Goto(0, height-2),
-             clear::CurrentLine,
-             "=".repeat(width.into()),
-    ).unwrap();
-    write!(stdout, "{}{}Type your message here:",
-             cursor::Goto(0, height-1),
-             clear::CurrentLine,
-    ).unwrap();
+    write!(
+        stdout,
+        "{}{}{}",
+        cursor::Goto(0, height - 2),
+        clear::CurrentLine,
+        "=".repeat(width.into()),
+    )
+    .unwrap();
+    write!(
+        stdout,
+        "{}{}Type your message here:",
+        cursor::Goto(0, height - 1),
+        clear::CurrentLine,
+    )
+    .unwrap();
 
     //Draw message buffer
-    write!(stdout, "{}{}{}",
-             cursor::Goto(0, height),
-             clear::CurrentLine,
-             msg_buf,
-    ).unwrap();
+    write!(
+        stdout,
+        "{}{}{}",
+        cursor::Goto(0, height),
+        clear::CurrentLine,
+        msg_buf,
+    )
+    .unwrap();
 
     //Draw log
-    for i in 0..height-3 {
+    for i in 0..height - 3 {
         if usize::from(i) >= msg_log.len() {
-            break
+            break;
         }
 
-        write!(stdout, "{}{}{}",
-                 cursor::Goto(0, height-(i+3)),
-                 clear::CurrentLine,
-                 msg_log[msg_log.len() - (usize::from(i) + 1)],
-        ).unwrap();
+        write!(
+            stdout,
+            "{}{}{}",
+            cursor::Goto(0, height - (i + 3)),
+            clear::CurrentLine,
+            msg_log[msg_log.len() - (usize::from(i) + 1)],
+        )
+        .unwrap();
     }
 
     stdout.flush().unwrap();
@@ -109,7 +127,10 @@ struct Buf {
 
 impl Buf {
     fn init() -> Buf {
-        Buf{buffer: [' '; 1024], head: 0}
+        Buf {
+            buffer: [' '; 1024],
+            head: 0,
+        }
     }
 
     //TODO: handle overflow
@@ -118,6 +139,7 @@ impl Buf {
         self.head += 1;
     }
 
+    //TODO: handle underflow
     fn back(&mut self) {
         self.head -= 1;
         self.buffer[self.head] = ' ';
