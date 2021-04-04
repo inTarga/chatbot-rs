@@ -1,5 +1,5 @@
 //use std::io::prelude::*;
-//use std::net::TcpStream;
+use std::net::TcpStream;
 //use std::net::Shutdown;
 //use std::process;
 
@@ -16,6 +16,9 @@ use termion::{clear, cursor, terminal_size};
 pub fn run() {
     //Clear screen
     println!("{}", clear::All);
+
+    //Connect to the server
+    let mut stream = TcpStream::connect("localhost:7878").unwrap();
 
     //Get terminal dimensions
     let (width, height) = terminal_size().unwrap();
@@ -37,10 +40,7 @@ pub fn run() {
         if let Some(action) = handle_input(&mut stdin, &mut msg_buf) {
             match action {
                 Action::Quit => break,
-                Action::Clear => {
-                    msg_log.push(String::from(format!("{}", msg_buf)));
-                    msg_buf.clear();
-                }
+                Action::Clear => send_message(&mut stream, &mut msg_buf, &mut msg_log),
             }
         }
 
@@ -113,6 +113,16 @@ fn handle_input(keys: &mut Keys<termion::AsyncReader>, msg_buf: &mut Buf) -> Opt
         }
     }
     return None;
+}
+
+fn send_message(stream: &mut TcpStream, msg_buf: &mut Buf, msg_log: &mut Vec<String>) {
+    let msg = String::from(format!("{}", msg_buf));
+
+    stream.write(msg.as_bytes()).unwrap();
+    stream.write(b"\n").unwrap();
+    msg_log.push(msg);
+
+    msg_buf.clear();
 }
 
 enum Action {
