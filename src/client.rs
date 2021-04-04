@@ -1,4 +1,4 @@
-//use std::io::prelude::*;
+use std::io::prelude::*;
 use std::net::TcpStream;
 //use std::net::Shutdown;
 //use std::process;
@@ -19,6 +19,9 @@ pub fn run() {
 
     //Connect to the server
     let mut stream = TcpStream::connect("localhost:7878").unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_millis(10)))
+        .unwrap();
 
     //Get terminal dimensions
     let (width, height) = terminal_size().unwrap();
@@ -33,6 +36,9 @@ pub fn run() {
     let mut msg_log: Vec<String> = Vec::new();
 
     loop {
+        //Poll the server
+        poll(&mut stream, &mut msg_log);
+
         //Draw the screen
         redraw(&mut stdout, height, width, &msg_buf, &msg_log);
 
@@ -45,6 +51,15 @@ pub fn run() {
         }
 
         thread::sleep(Duration::from_millis(10));
+    }
+}
+
+fn poll(stream: &mut TcpStream, msg_log: &mut Vec<String>) {
+    let mut buffer = [0; 1024];
+
+    match stream.read(&mut buffer) {
+        Ok(_) => msg_log.push(String::from_utf8(buffer.to_vec()).unwrap()),
+        _ => (),
     }
 }
 
