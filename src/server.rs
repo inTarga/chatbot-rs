@@ -3,10 +3,13 @@ use std::net::TcpListener;
 use std::net::TcpStream;
 
 pub fn serve() {
-    let listener = TcpListener::bind("localhost:7878").unwrap();
+    let listener = TcpListener::bind("localhost:7878").expect("Failed to bind port");
 
-    for stream in listener.incoming() {
-        handle_connection(&mut stream.unwrap());
+    for stream_result in listener.incoming() {
+        match stream_result {
+            Ok(mut stream) => handle_connection(&mut stream),
+            Err(error) => eprintln!("failed to resolve stream: {}", error),
+        }
     }
 }
 

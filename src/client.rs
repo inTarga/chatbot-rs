@@ -4,6 +4,7 @@ use std::net::TcpStream;
 //use std::process;
 
 use std::fmt;
+//use std::io;
 use std::io::{stdout, Stdout, Write};
 use std::thread;
 use std::time::Duration;
@@ -18,16 +19,18 @@ pub fn run() {
     println!("{}", clear::All);
 
     //Connect to the server
-    let mut stream = TcpStream::connect("localhost:7878").unwrap();
+    let mut stream = TcpStream::connect("localhost:7878").expect("Failed to connect to server");
     stream
         .set_read_timeout(Some(Duration::from_millis(10)))
-        .unwrap();
+        .expect("Failed to set read timeout");
 
     //Get terminal dimensions
-    let (width, height) = terminal_size().unwrap();
+    let (width, height) = terminal_size().expect("Failed to get terminal size");
 
     //Get raw terminal
-    let mut stdout = stdout().into_raw_mode().unwrap();
+    let mut stdout = stdout()
+        .into_raw_mode()
+        .expect("Failed to put terminal into raw mode");
 
     //Get stdin
     let mut stdin = termion::async_stdin().keys();
@@ -40,13 +43,13 @@ pub fn run() {
         poll(&mut stream, &mut msg_log);
 
         //Draw the screen
-        redraw(&mut stdout, height, width, &msg_buf, &msg_log);
+        redraw(&mut stdout, height, width, &msg_buf, &msg_log).expect("Failed to write");
 
         //Handle input
         if let Some(action) = handle_input(&mut stdin, &mut msg_buf) {
             match action {
                 Action::Quit => break,
-                Action::Clear => send_message(&mut stream, &mut msg_buf, &mut msg_log),
+                Action::Clear => send_message(&mut stream, &mut msg_buf, &mut msg_log).expect("Failed to send message"),
             }
         }
 
@@ -58,7 +61,8 @@ fn poll(stream: &mut TcpStream, msg_log: &mut Vec<String>) {
     let mut buffer = [0; 1024];
 
     match stream.read(&mut buffer) {
-        Ok(_) => msg_log.push(String::from_utf8(buffer.to_vec()).unwrap()),
+        Ok(_) => msg_log
+            .push(String::from_utf8(buffer.to_vec()).expect("Failed to parse message from server")),
         _ => (),
     }
 }
@@ -69,7 +73,7 @@ fn redraw(
     width: u16,
     msg_buf: &Buf,
     msg_log: &Vec<String>,
-) {
+) -> std::io::Result<()> {
     //Draw divider
     write!(
         stdout,
@@ -77,15 +81,13 @@ fn redraw(
         cursor::Goto(0, height - 2),
         clear::CurrentLine,
         "=".repeat(width.into()),
-    )
-    .unwrap();
+    )?;
     write!(
         stdout,
         "{}{}Type your message here:",
         cursor::Goto(0, height - 1),
         clear::CurrentLine,
-    )
-    .unwrap();
+    )?;
 
     //Draw message buffer
     write!(
@@ -94,11 +96,12 @@ fn redraw(
         cursor::Goto(0, height),
         clear::CurrentLine,
         msg_buf,
-    )
-    .unwrap();
+    )?;
 
     //Draw log
+    //iterate from line above message buffer to top of term
     for i in 0..height - 3 {
+        //break if we run out of messages
         if usize::from(i) >= msg_log.len() {
             break;
         }
@@ -109,11 +112,10 @@ fn redraw(
             cursor::Goto(0, height - (i + 3)),
             clear::CurrentLine,
             msg_log[msg_log.len() - (usize::from(i) + 1)],
-        )
-        .unwrap();
+        )?;
     }
 
-    stdout.flush().unwrap();
+    stdout.flush()
 }
 
 fn handle_input(keys: &mut Keys<termion::AsyncReader>, msg_buf: &mut Buf) -> Option<Action> {
@@ -130,14 +132,19 @@ fn handle_input(keys: &mut Keys<termion::AsyncReader>, msg_buf: &mut Buf) -> Opt
     return None;
 }
 
-fn send_message(stream: &mut TcpStream, msg_buf: &mut Buf, msg_log: &mut Vec<String>) {
+fn send_message(
+    stream: &mut TcpStream,
+    msg_buf: &mut Buf,
+    msg_log: &mut Vec<String>,
+) -> std::io::Result<()> {
     let msg = String::from(format!("{}", msg_buf));
 
-    stream.write(msg.as_bytes()).unwrap();
-    stream.write(b"\n").unwrap();
+    stream.write(msg.as_bytes())?;
+    stream.write(b"\n")?;
     msg_log.push(msg);
 
     msg_buf.clear();
+    Ok(())
 }
 
 enum Action {

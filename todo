@@ -1,7 +1,7 @@
-[ ] functional tui
+[x] functional tui
 [ ] protocol
 [ ] chatbots
 [ ] colour/format chat output
 [ ] print controls
-[ ] better error handling
+[x] better error handling
 [ ] logging
