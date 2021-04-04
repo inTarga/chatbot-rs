@@ -1,29 +1,22 @@
 use std::io::prelude::*;
-use std::io::BufReader;
 use std::net::TcpListener;
 use std::net::TcpStream;
-
-//mod server;
 
 pub fn serve() {
     let listener = TcpListener::bind("localhost:7878").unwrap();
 
     for stream in listener.incoming() {
-        handle_connection(stream.unwrap());
+        handle_connection(&mut stream.unwrap());
     }
 }
 
-fn handle_connection(stream: TcpStream) {
-    let mut reader = BufReader::new(stream);
-    let mut header = String::with_capacity(1024);
+fn handle_connection(stream: &mut TcpStream) {
+    //TODO: prevent leak/panic
+    loop {
+        let mut buffer = [0; 1024];
+        stream.read(&mut buffer).unwrap();
 
-    reader.read_line(&mut header).unwrap();
-    header.pop();
-
-    println!("Header: {}", header);
-
-    match header.as_str() {
-        "WRITE" => println!("Write!"),
-        _ => println!("Header not recognised...")
+        println!("received message: {}", String::from_utf8_lossy(&buffer));
+        stream.write(b"received message: ").unwrap();
     }
 }
