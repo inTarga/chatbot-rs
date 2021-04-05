@@ -140,7 +140,7 @@ fn send_message(
     let msg = String::from(format!("{}", msg_buf));
 
     stream.write(msg.as_bytes())?;
-    stream.write(b"\n")?;
+    //stream.write(b"\n")?;
     msg_log.push(msg);
 
     msg_buf.clear();

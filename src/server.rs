@@ -1,19 +1,23 @@
 use std::io::prelude::*;
 use std::net::TcpListener;
 use std::net::TcpStream;
+use std::thread;
 
 pub fn serve() {
     let listener = TcpListener::bind("localhost:7878").expect("Failed to bind port");
 
     for stream_result in listener.incoming() {
-        match stream_result {
-            Ok(mut stream) => handle_connection(&mut stream),
-            Err(error) => eprintln!("failed to resolve stream: {}", error),
-        }
+        thread::spawn(|| {
+            match stream_result {
+                Ok(mut stream) => handle_connection(&mut stream),
+                Err(error) => eprintln!("failed to resolve stream: {}", error),
+            }
+        });
     }
 }
 
 fn handle_connection(stream: &mut TcpStream) {
+    //create bots here?
     //TODO: prevent leak/panic
     loop {
         let mut buffer = [0; 1024];

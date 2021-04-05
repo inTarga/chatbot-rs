@@ -1,7 +1,11 @@
-[x] functional tui
-[ ] protocol
 [ ] chatbots
 [ ] colour/format chat output
 [ ] print controls
+[ ] handle multi-line messages
+[ ] generalise IP and port
+[ ] make a nice README
 [x] better error handling
-[ ] logging
+[x] functional tui
+[ ] clear screen on death?
+[ ] read in lines?
+[ ] logging?
