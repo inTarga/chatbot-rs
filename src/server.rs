@@ -43,6 +43,8 @@ fn handle_connection(stream: &mut TcpStream) {
 
         match rcv_out.try_recv() {
             Ok(msg) => {
+                //TODO: breakout into func?
+                stream.write(b"Alice :").unwrap();
                 stream.write(msg.as_bytes()).unwrap();
                 stream.write(b"\n").unwrap();
             }

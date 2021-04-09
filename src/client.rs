@@ -37,7 +37,7 @@ pub fn run() {
     let mut stdin = termion::async_stdin().keys();
 
     let mut msg_buf = Buf::init();
-    let mut msg_log: Vec<String> = Vec::new();
+    let mut msg_log: Vec<Msg> = Vec::new();
 
     loop {
         //Poll the server
@@ -59,11 +59,17 @@ pub fn run() {
     }
 }
 
-fn poll_server(reader: &mut BufReader<TcpStream>, msg_log: &mut Vec<String>) {
+fn poll_server(reader: &mut BufReader<TcpStream>, msg_log: &mut Vec<Msg>) {
     let mut buffer = String::with_capacity(1024);
 
     match BufRead::read_line(reader, &mut buffer) {
-        Ok(_) => msg_log.push(buffer),
+        Ok(_) => {
+            let (author, body) = buffer.split_at(7);
+            msg_log.push(Msg {
+                author: String::from(author),
+                body: String::from(body),
+            });
+        }
         _ => (),
     }
 }
@@ -73,7 +79,7 @@ fn redraw(
     height: u16,
     width: u16,
     msg_buf: &Buf,
-    msg_log: &Vec<String>,
+    msg_log: &Vec<Msg>,
 ) -> std::io::Result<()> {
     //Draw divider
     write!(
@@ -101,19 +107,32 @@ fn redraw(
 
     //Draw log
     //iterate from line above message buffer to top of term
-    for i in 0..height - 3 {
+    //TODO: Better breaking
+    let mut i = 0;
+    while i < height - 3 {
         //break if we run out of messages
-        if usize::from(i) >= msg_log.len() {
+        if usize::from(i / 2) >= msg_log.len() {
             break;
         }
 
+        let msg_index = msg_log.len() - (usize::from(i / 2) + 1);
+        //TODO: break these writes out into a function?
+        write!(
+            stdout,
+            "{}{}{}",
+            cursor::Goto(0, height - (i + 4)),
+            clear::CurrentLine,
+            msg_log[msg_index].author,
+        )?;
         write!(
             stdout,
             "{}{}{}",
             cursor::Goto(0, height - (i + 3)),
             clear::CurrentLine,
-            msg_log[msg_log.len() - (usize::from(i) + 1)],
+            msg_log[msg_index].body,
         )?;
+
+        i += 2;
     }
 
     stdout.flush()
@@ -121,6 +140,7 @@ fn redraw(
 
 fn handle_input(keys: &mut Keys<termion::AsyncReader>, msg_buf: &mut Buf) -> Option<Action> {
     //TODO: handle more keys at once?
+    //TODO: handle signals
     if let Some(Ok(key)) = keys.next() {
         match key {
             Key::Ctrl('c') => return Some(Action::Quit),
@@ -136,11 +156,14 @@ fn handle_input(keys: &mut Keys<termion::AsyncReader>, msg_buf: &mut Buf) -> Opt
 fn send_message(
     stream: &mut TcpStream,
     msg_buf: &mut Buf,
-    msg_log: &mut Vec<String>,
+    msg_log: &mut Vec<Msg>,
 ) -> std::io::Result<()> {
-    let msg = String::from(format!("{}", msg_buf));
+    let msg = Msg {
+        author: String::from("You :"),
+        body: String::from(format!("{}", msg_buf)),
+    };
 
-    stream.write(msg.as_bytes())?;
+    stream.write(msg.body.as_bytes())?;
     stream.write(b"\n")?;
     msg_log.push(msg);
 
@@ -151,6 +174,11 @@ fn send_message(
 enum Action {
     Quit,
     Clear,
+}
+
+struct Msg {
+    author: String,
+    body: String,
 }
 
 struct Buf {

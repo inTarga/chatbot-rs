@@ -1,11 +1,16 @@
-[ ] chatbots
+[-] chatbots
+    [x] basic implementation
+    [ ] multi bots
+    [ ] better interaction
 [ ] colour/format chat output
 [ ] print controls
 [ ] handle multi-line messages
 [ ] generalise IP and port
 [ ] make a nice README
-[x] better error handling
+[ ] kill server threads neatly
+[-] better error handling
+[x] include author info in msg log
 [x] functional tui
+[x] read in lines
 [ ] clear screen on death?
-[ ] read in lines?
 [ ] logging?
