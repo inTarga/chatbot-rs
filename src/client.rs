@@ -5,7 +5,7 @@ use std::net::TcpStream;
 
 use std::fmt;
 //use std::io;
-use std::io::{stdout, Stdout, Write};
+use std::io::{stdout, BufReader, Stdout, Write};
 use std::thread;
 use std::time::Duration;
 use termion;
@@ -23,6 +23,7 @@ pub fn run() {
     stream
         .set_read_timeout(Some(Duration::from_millis(10)))
         .expect("Failed to set read timeout");
+    let mut reader = BufReader::new(stream.try_clone().expect("Failed to clone stream"));
 
     //Get terminal dimensions
     let (width, height) = terminal_size().expect("Failed to get terminal size");
@@ -40,7 +41,7 @@ pub fn run() {
 
     loop {
         //Poll the server
-        poll(&mut stream, &mut msg_log);
+        poll_server(&mut reader, &mut msg_log);
 
         //Draw the screen
         redraw(&mut stdout, height, width, &msg_buf, &msg_log).expect("Failed to write");
@@ -49,7 +50,8 @@ pub fn run() {
         if let Some(action) = handle_input(&mut stdin, &mut msg_buf) {
             match action {
                 Action::Quit => break,
-                Action::Clear => send_message(&mut stream, &mut msg_buf, &mut msg_log).expect("Failed to send message"),
+                Action::Clear => send_message(&mut stream, &mut msg_buf, &mut msg_log)
+                    .expect("Failed to send message"),
             }
         }
 
@@ -57,12 +59,11 @@ pub fn run() {
     }
 }
 
-fn poll(stream: &mut TcpStream, msg_log: &mut Vec<String>) {
-    let mut buffer = [0; 1024];
+fn poll_server(reader: &mut BufReader<TcpStream>, msg_log: &mut Vec<String>) {
+    let mut buffer = String::with_capacity(1024);
 
-    match stream.read(&mut buffer) {
-        Ok(_) => msg_log
-            .push(String::from_utf8(buffer.to_vec()).expect("Failed to parse message from server")),
+    match BufRead::read_line(reader, &mut buffer) {
+        Ok(_) => msg_log.push(buffer),
         _ => (),
     }
 }
@@ -140,7 +141,7 @@ fn send_message(
     let msg = String::from(format!("{}", msg_buf));
 
     stream.write(msg.as_bytes())?;
-    //stream.write(b"\n")?;
+    stream.write(b"\n")?;
     msg_log.push(msg);
 
     msg_buf.clear();

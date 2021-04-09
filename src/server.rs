@@ -1,5 +1,6 @@
 use crate::bots;
 use std::io::prelude::*;
+use std::io::BufReader;
 use std::net::TcpListener;
 use std::net::TcpStream;
 use std::sync::mpsc;
@@ -21,6 +22,7 @@ fn handle_connection(stream: &mut TcpStream) {
     stream
         .set_read_timeout(Some(Duration::from_millis(10)))
         .expect("Failed to set read timeout on TCP stream");
+    let mut reader = BufReader::new(stream.try_clone().expect("Failed to clone stream"));
 
     //Create bots
     let (snd_out, rcv_out): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
@@ -29,17 +31,20 @@ fn handle_connection(stream: &mut TcpStream) {
 
     //TODO: prevent leak/panic
     loop {
-        let mut buffer = [0; 1024];
-        match stream.read(&mut buffer) {
-            Ok(_) => snd_in
-                .send(String::from_utf8(buffer.to_vec()).unwrap())
-                .unwrap(),
+        //TODO: prevent constant reallocation?
+        let mut buffer = String::with_capacity(1024);
+        match reader.read_line(&mut buffer) {
+            Ok(_) => {
+                buffer.pop();
+                snd_in.send(buffer).unwrap();
+            }
             _ => (),
         };
 
         match rcv_out.try_recv() {
             Ok(msg) => {
                 stream.write(msg.as_bytes()).unwrap();
+                stream.write(b"\n").unwrap();
             }
             Err(_) => (),
         }
