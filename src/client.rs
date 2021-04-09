@@ -12,7 +12,7 @@ use termion;
 use termion::event::Key;
 use termion::input::{Keys, TermRead};
 use termion::raw::{IntoRawMode, RawTerminal};
-use termion::{clear, cursor, terminal_size};
+use termion::{clear, color, cursor, style, terminal_size};
 
 pub fn run() {
     //Clear screen
@@ -26,6 +26,7 @@ pub fn run() {
     let mut reader = BufReader::new(stream.try_clone().expect("Failed to clone stream"));
 
     //Get terminal dimensions
+    //TODO: adjust dynamically
     let (width, height) = terminal_size().expect("Failed to get terminal size");
 
     //Get raw terminal
@@ -84,9 +85,11 @@ fn redraw(
     //Draw divider
     write!(
         stdout,
-        "{}{}{}",
+        "{}{}{}{}{}",
         cursor::Goto(0, height - 2),
         clear::CurrentLine,
+        color::Fg(color::White),
+        style::Bold,
         "=".repeat(width.into()),
     )?;
     write!(
@@ -99,9 +102,10 @@ fn redraw(
     //Draw message buffer
     write!(
         stdout,
-        "{}{}{}",
+        "{}{}{}{}",
         cursor::Goto(0, height),
         clear::CurrentLine,
+        style::Reset,
         msg_buf,
     )?;
 
@@ -119,16 +123,20 @@ fn redraw(
         //TODO: break these writes out into a function?
         write!(
             stdout,
-            "{}{}{}",
+            "{}{}{}{}{}",
             cursor::Goto(0, height - (i + 4)),
             clear::CurrentLine,
+            color::Fg(color::Red),
+            style::Bold,
             msg_log[msg_index].author,
         )?;
         write!(
             stdout,
-            "{}{}{}",
+            "{}{}{}{}{}",
             cursor::Goto(0, height - (i + 3)),
             clear::CurrentLine,
+            color::Fg(color::White),
+            style::Reset,
             msg_log[msg_index].body,
         )?;
 

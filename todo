@@ -2,7 +2,10 @@
     [x] basic implementation
     [ ] multi bots
     [ ] better interaction
-[ ] colour/format chat output
+[-] colour/format chat output
+    [x] basic
+    [ ] change colour per author
+    [ ] timestamps?
 [ ] print controls
 [ ] handle multi-line messages
 [ ] generalise IP and port
