@@ -1,6 +1,6 @@
 use std::io::prelude::*;
-use std::net::TcpStream;
 //use std::net::Shutdown;
+use std::net::TcpStream;
 //use std::process;
 
 use std::fmt;
@@ -58,6 +58,8 @@ pub fn run() {
 
         thread::sleep(Duration::from_millis(10));
     }
+
+    write!(stdout, "{}{}", cursor::Goto(1, 1), clear::All).expect("Failed to clear the terminal");
 }
 
 fn poll_server(reader: &mut BufReader<TcpStream>, msg_log: &mut Vec<Msg>) {
