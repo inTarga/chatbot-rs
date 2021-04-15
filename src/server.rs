@@ -29,11 +29,14 @@ fn handle_connection(stream: &mut TcpStream) {
     let (snd_in, rcv_in): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
     thread::spawn(move || bots::run_bot(rcv_in, snd_out));
 
-    //TODO: prevent leak/panic
     loop {
         //TODO: prevent constant reallocation?
         let mut buffer = String::with_capacity(1024);
         match reader.read_line(&mut buffer) {
+            Ok(0) => {
+                //TODO: log?
+                break;
+            }
             Ok(_) => {
                 buffer.pop();
                 snd_in.send(buffer).unwrap();
@@ -42,15 +45,24 @@ fn handle_connection(stream: &mut TcpStream) {
         };
 
         match rcv_out.try_recv() {
-            Ok(msg) => {
-                //TODO: breakout into func?
-                stream.write(b"Alice :").unwrap();
-                stream.write(msg.as_bytes()).unwrap();
-                stream.write(b"\n").unwrap();
-            }
+            Ok(msg) => match forward_reply(stream, msg, String::from("Alice :")) {
+                Ok(_) => (),
+                Err(_) => {
+                    //TODO: log?
+                    break;
+                }
+            },
             Err(_) => (),
         }
 
         thread::sleep(Duration::from_millis(10));
     }
+}
+
+//Forward a reply from a bot to the client
+fn forward_reply(stream: &mut TcpStream, msg: String, author: String) -> std::io::Result<()> {
+    stream.write(author.as_bytes())?;
+    stream.write(msg.as_bytes())?;
+    stream.write(b"\n")?;
+    Ok(())
 }

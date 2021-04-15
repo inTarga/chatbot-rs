@@ -5,11 +5,15 @@ use std::time::Duration;
 pub fn run_bot(rcv: mpsc::Receiver<String>, snd: mpsc::Sender<String>) {
     loop {
         match rcv.try_recv() {
-            Ok(msg) => snd.send(gen_text(msg)).unwrap(),
-            _ => (),
+            Ok(msg) => snd.send(gen_text(msg)).unwrap_or(()),
+            Err(mpsc::TryRecvError::Disconnected) => {
+                //TODO: log?
+                break;
+            }
+            Err(mpsc::TryRecvError::Empty) => (),
         };
 
-        thread::sleep(Duration::from_millis(10));
+        thread::sleep(Duration::from_secs(1));
     }
 }
 
