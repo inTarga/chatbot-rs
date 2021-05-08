@@ -84,40 +84,13 @@ fn redraw(
     msg_buf: &Buf,
     msg_log: &Vec<Msg>,
 ) -> std::io::Result<()> {
-    //Draw divider
-    write!(
-        stdout,
-        "{}{}{}{}{}",
-        cursor::Goto(0, height - 2),
-        clear::CurrentLine,
-        color::Fg(color::White),
-        style::Bold,
-        "=".repeat(width.into()),
-    )?;
-    write!(
-        stdout,
-        "{}{}Type your message here:",
-        cursor::Goto(0, height - 1),
-        clear::CurrentLine,
-    )?;
+    //TODO: return early if term is too small?
 
-    //Draw message buffer
-    write!(
-        stdout,
-        "{}{}{}{}",
-        cursor::Goto(0, height),
-        clear::CurrentLine,
-        style::Reset,
-        msg_buf,
-    )?;
+    let mut lines: Vec<String> = Vec::new(); //lines to be displayed
 
-    let mut line_num = height - 3; //line number we're drawing at, start from bottom
-
-    //Draw log
+    //Prepare log
     //loop over messages in log, reversed to show newest messages first
-    'outer: for msg in msg_log.iter().rev() {
-        let mut lines: Vec<String> = Vec::new(); //lines of the message to be displayed
-
+    for msg in msg_log.iter() {
         //first line is the author line,
         lines.push(String::from(format!(
             "{}{}{}{}{}",
@@ -130,24 +103,33 @@ fn redraw(
 
         //split the message body into lines according to terminal width
         split_and_push(msg.body.clone(), &mut lines, usize::from(width));
+    }
 
-        //iterate over the message, and write each line to the terminal,
-        //reversed because we write from the bottom up
-        for line in lines.iter().rev() {
-            write!(
-                stdout,
-                "{}{}{}",
-                cursor::Goto(0, line_num),
-                clear::CurrentLine,
-                line,
-            )?;
+    //Prepare divider
+    lines.push(format!("{}{}", "=".repeat(width.into()), style::Reset));
+    lines.push(format!("{}{}", style::Bold, "Type your message here:"));
 
-            //if we've reached the top of the terminal, to stop writing any messages
-            if line_num == 1 {
-                break 'outer;
-            }
-            line_num -= 1;
+    //Prepare message buffer
+    split_and_push(format!("{}", msg_buf), &mut lines, usize::from(width));
+
+    let mut line_num = height; //line number we're drawing at, start from bottom
+
+    //iterate over the message, and write each line to the terminal,
+    //reversed because we write from the bottom up
+    for line in lines.iter().rev() {
+        write!(
+            stdout,
+            "{}{}{}",
+            cursor::Goto(0, line_num),
+            clear::CurrentLine,
+            line,
+        )?;
+
+        //if we've reached the top of the terminal, to stop writing any messages
+        if line_num == 1 {
+            break;
         }
+        line_num -= 1;
     }
 
     stdout.flush()
