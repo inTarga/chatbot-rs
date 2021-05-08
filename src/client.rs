@@ -111,38 +111,43 @@ fn redraw(
         msg_buf,
     )?;
 
+    let mut line_num = height - 3; //line number we're drawing at, start from bottom
+
     //Draw log
-    //iterate from line above message buffer to top of term
-    //TODO: Better breaking
-    let mut i = 0;
-    while i < height - 3 {
-        //break if we run out of messages
-        if usize::from(i / 2) >= msg_log.len() {
-            break;
-        }
+    //loop over messages in log, reversed to show newest messages first
+    'outer: for msg in msg_log.iter().rev() {
+        let mut lines: Vec<String> = Vec::new(); //lines of the message to be displayed
 
-        let msg_index = msg_log.len() - (usize::from(i / 2) + 1);
-        //TODO: break these writes out into a function?
-        write!(
-            stdout,
+        //first line is the author line,
+        lines.push(String::from(format!(
             "{}{}{}{}{}",
-            cursor::Goto(0, height - (i + 4)),
-            clear::CurrentLine,
-            color::Fg(color::Red),
+            color::Fg(color::Red), //apply authorline formatting
             style::Bold,
-            msg_log[msg_index].author,
-        )?;
-        write!(
-            stdout,
-            "{}{}{}{}{}",
-            cursor::Goto(0, height - (i + 3)),
-            clear::CurrentLine,
-            color::Fg(color::White),
+            msg.author,
+            color::Fg(color::White), //remove formatting before moving on
             style::Reset,
-            msg_log[msg_index].body,
-        )?;
+        )));
 
-        i += 2;
+        //split the message body into lines according to terminal width
+        split_and_push(msg.body.clone(), &mut lines, usize::from(width));
+
+        //iterate over the message, and write each line to the terminal,
+        //reversed because we write from the bottom up
+        for line in lines.iter().rev() {
+            write!(
+                stdout,
+                "{}{}{}",
+                cursor::Goto(0, line_num),
+                clear::CurrentLine,
+                line,
+            )?;
+
+            //if we've reached the top of the terminal, to stop writing any messages
+            if line_num == 1 {
+                break 'outer;
+            }
+            line_num -= 1;
+        }
     }
 
     stdout.flush()
@@ -179,6 +184,17 @@ fn send_message(
 
     msg_buf.clear();
     Ok(())
+}
+
+//TODO: do something clever with iterators?
+fn split_and_push(src: String, dst: &mut Vec<String>, width: usize) {
+    let mut rest = src;
+    while rest.len() > width {
+        let split = rest.split_at(width);
+        dst.push(String::from(split.0));
+        rest = String::from(split.1);
+    }
+    dst.push(rest);
 }
 
 enum Action {
