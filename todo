@@ -1,7 +1,6 @@
 [ ] print controls
 [ ] generalise IP and port
 [ ] make a nice README
-[ ] dynamically resize according to term dimensions
 [-] chatbots
     [x] basic implementation
     [ ] multi bots
@@ -11,6 +10,7 @@
     [ ] change colour per author
     [ ] timestamps?
 [-] better error handling
+[x] dynamically resize according to term dimensions
 [x] handle multi-line messages
     [x] tidy the draw loop
 [x] kill server threads neatly

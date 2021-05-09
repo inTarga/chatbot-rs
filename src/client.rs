@@ -25,10 +25,6 @@ pub fn run() {
         .expect("Failed to set read timeout");
     let mut reader = BufReader::new(stream.try_clone().expect("Failed to clone stream"));
 
-    //Get terminal dimensions
-    //TODO: adjust dynamically
-    let (width, height) = terminal_size().expect("Failed to get terminal size");
-
     //Get raw terminal
     let mut stdout = stdout()
         .into_raw_mode()
@@ -41,6 +37,9 @@ pub fn run() {
     let mut msg_log: Vec<Msg> = Vec::new();
 
     loop {
+        //Get terminal dimensions
+        let (width, height) = terminal_size().expect("Failed to get terminal size");
+
         //Poll the server
         poll_server(&mut reader, &mut msg_log);
 
