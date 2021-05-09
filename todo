@@ -4,7 +4,7 @@
 [-] chatbots
     [x] basic implementation
     [ ] multi bots
-    [ ] better interaction
+    [-] better interaction
 [-] colour/format chat output
     [x] basic
     [ ] change colour per author
