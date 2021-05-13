@@ -1,3 +1,4 @@
+use rand::seq::SliceRandom;
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
@@ -13,6 +14,7 @@ pub fn run_bot(
         match rcv.try_recv() {
             Ok(msg) => {
                 //find out what actions are mentioned
+                //TODO: make message lowercase before parsing
                 let actions = parse_actions(msg, &known_actions);
                 //send back what the bot thought of those actions
                 snd.send(bot(actions)).unwrap_or(());
@@ -41,10 +43,16 @@ fn parse_actions(msg: String, known_actions: &[&str]) -> Vec<String> {
     actions
 }
 
-pub fn gen_text(actions: Vec<String>) -> String {
+pub fn alice(actions: Vec<String>) -> String {
     if actions.len() > 0 {
-        format!("Hmm... I don't want to {}", actions[0])
+        let response = ["Hmm... I don't want to", "I don't really feel up for a"]
+            .choose(&mut rand::thread_rng())
+            .unwrap();
+        format!("{} {}", response, actions[0])
     } else {
-        "What are you on about?".to_string()
+        let response = ["What are you on about?", "I literally can't even..."]
+            .choose(&mut rand::thread_rng())
+            .unwrap();
+        response.to_string()
     }
 }

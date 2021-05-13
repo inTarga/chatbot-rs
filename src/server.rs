@@ -27,7 +27,7 @@ fn handle_connection(stream: &mut TcpStream) {
     //Create bots
     let (snd_out, rcv_out): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
     let (snd_in, rcv_in): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
-    thread::spawn(move || bots::run_bot(rcv_in, snd_out, &bots::gen_text));
+    thread::spawn(move || bots::run_bot(rcv_in, snd_out, &bots::alice));
 
     loop {
         //TODO: prevent constant reallocation?
