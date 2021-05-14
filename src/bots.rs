@@ -61,5 +61,17 @@ pub fn alice(actions: Vec<String>) -> String {
 }
 
 pub fn beate(actions: Vec<String>) -> String {
-    "Beate :placeholder".to_string()
+    if actions.len() == 0 {
+        return "".to_string();
+    }
+
+    let action = actions.choose(&mut rand::thread_rng()).unwrap();
+    let prefix = "Beate :";
+    let alternative = ["harvesting", "slicing", "scalding"]
+        .choose(&mut rand::thread_rng())
+        .unwrap();
+    format!(
+        "{}A {} would be chill, But how about we do some {}!",
+        prefix, action, alternative
+    )
 }
