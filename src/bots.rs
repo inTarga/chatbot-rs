@@ -47,16 +47,19 @@ fn parse_actions(msg: String, known_actions: &[&str]) -> Vec<String> {
 
 pub fn alice(actions: Vec<String>) -> String {
     let prefix = "Alice :";
-    if actions.len() > 0 {
-        let response = ["Hmm... I don't want to ", "I don't really feel up for a "]
-            .choose(&mut rand::thread_rng())
-            .unwrap();
-        format!("{}{}{}", prefix, response, actions[0])
-    } else {
-        let response = ["What are you on about?", "I literally can't even..."]
-            .choose(&mut rand::thread_rng())
-            .unwrap();
-        format!("{}{}", prefix, response)
+    match actions.choose(&mut rand::thread_rng()) {
+        Some(action) => {
+            let response = ["Hmm... I don't want to ", "I don't really feel up for a "]
+                .choose(&mut rand::thread_rng())
+                .unwrap();
+            format!("{}{}{}", prefix, response, action)
+        }
+        None => {
+            let response = ["What are you on about?", "I literally can't even..."]
+                .choose(&mut rand::thread_rng())
+                .unwrap();
+            format!("{}{}", prefix, response)
+        }
     }
 }
 
