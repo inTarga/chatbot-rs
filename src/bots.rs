@@ -16,7 +16,10 @@ pub fn run_bot(
                 //find out what actions are mentioned
                 let actions = parse_actions(msg.to_lowercase(), &known_actions);
                 //send back what the bot thought of those actions
-                snd.send(bot(actions)).unwrap_or(());
+                let reply = bot(actions);
+                if reply.len() > 0 {
+                    snd.send(reply).unwrap_or(());
+                }
             }
             Err(mpsc::TryRecvError::Disconnected) => {
                 //TODO: log?
