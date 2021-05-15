@@ -46,7 +46,7 @@ fn parse_actions(msg: String, known_actions: &[&str]) -> Vec<String> {
 }
 
 pub fn alice(actions: Vec<String>) -> String {
-    let prefix = "Alice :";
+    let prefix = "Alice:";
     match actions.choose(&mut rand::thread_rng()) {
         Some(action) => {
             let response = ["Hmm... I don't want to ", "I don't really feel up for a "]
@@ -69,7 +69,7 @@ pub fn beate(actions: Vec<String>) -> String {
     }
 
     let action = actions.choose(&mut rand::thread_rng()).unwrap();
-    let prefix = "Beate :";
+    let prefix = "Beate:";
     let alternative = ["harvesting", "slicing", "scalding"]
         .choose(&mut rand::thread_rng())
         .unwrap();

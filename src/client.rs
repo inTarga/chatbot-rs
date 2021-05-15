@@ -65,14 +65,17 @@ fn poll_server(reader: &mut BufReader<TcpStream>, msg_log: &mut Vec<Msg>) {
     let mut buffer = String::with_capacity(1024);
 
     match BufRead::read_line(reader, &mut buffer) {
-        Ok(_) => {
-            let (author, body) = buffer.split_at(7);
-            msg_log.push(Msg {
-                author: String::from(author),
-                body: String::from(body),
-            });
-        }
-        _ => (),
+        Ok(_) => match buffer.find(":") {
+            Some(i) => {
+                let (author, body) = buffer.split_at(i + 1);
+                msg_log.push(Msg {
+                    author: String::from(author.trim_end_matches(":")),
+                    body: String::from(body),
+                });
+            }
+            None => (), //TODO: log?
+        },
+        _ => (), //TODO: log?
     }
 }
 
@@ -155,7 +158,7 @@ fn send_message(
     msg_log: &mut Vec<Msg>,
 ) -> std::io::Result<()> {
     let msg = Msg {
-        author: String::from("You :"),
+        author: String::from("You"),
         body: String::from(format!("{}", msg_buf)),
     };
 
