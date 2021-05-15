@@ -1,11 +1,8 @@
-use std::io::prelude::*;
-//use std::net::Shutdown;
-use std::net::TcpStream;
-//use std::process;
-
+use chrono::Utc;
 use std::fmt;
-//use std::io;
+use std::io::prelude::*;
 use std::io::{stdout, BufReader, Stdout, Write};
+use std::net::TcpStream;
 use std::thread;
 use std::time::Duration;
 use termion;
@@ -70,6 +67,7 @@ fn poll_server(reader: &mut BufReader<TcpStream>, msg_log: &mut Vec<Msg>) {
                 let (author, body) = buffer.split_at(i + 1);
                 msg_log.push(Msg {
                     author: String::from(author.trim_end_matches(":")),
+                    time: timestamp(),
                     body: String::from(body),
                 });
             }
@@ -93,11 +91,12 @@ fn redraw(
     //Prepare log
     //loop over messages in log, reversed to show newest messages first
     for msg in msg_log.iter() {
-        //first line is the author line,
+        //first line is the author line
         lines.push(String::from(format!(
-            "{}{}{}{}{}",
-            color::Fg(color::Red), //apply authorline formatting
+            "{}{} {}{}{}{}",
             style::Bold,
+            msg.time,
+            color::Fg(color::Red),
             msg.author,
             color::Fg(color::White), //remove formatting before moving on
             style::Reset,
@@ -159,6 +158,7 @@ fn send_message(
 ) -> std::io::Result<()> {
     let msg = Msg {
         author: String::from("You"),
+        time: timestamp(),
         body: String::from(format!("{}", msg_buf)),
     };
 
@@ -181,6 +181,10 @@ fn split_and_push(src: String, dst: &mut Vec<String>, width: usize) {
     dst.push(rest);
 }
 
+fn timestamp() -> String {
+    format!("{}", Utc::now().format("%T"))
+}
+
 enum Action {
     Quit,
     Clear,
@@ -188,6 +192,7 @@ enum Action {
 
 struct Msg {
     author: String,
+    time: String,
     body: String,
 }
 

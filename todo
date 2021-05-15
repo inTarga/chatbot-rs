@@ -1,5 +1,6 @@
 [ ] generalise IP and port
 [ ] make a nice README
+[ ] fix cursor position after render
 [-] chatbots
     [x] basic implementation
     [-] multi bots
@@ -14,7 +15,7 @@
 [-] colour/format chat output
     [x] basic
     [ ] change colour per author
-    [ ] timestamps?
+    [x] timestamps
 [-] better error handling
 [x] dynamically resize according to term dimensions
 [x] handle multi-line messages
@@ -24,6 +25,8 @@
 [x] functional tui
 [x] read in lines
 [x] clear screen on death
+[ ] use something like tokio?
+[ ] prettier divider?
 [ ] print controls?
 [ ] replace msg_buf with vec?
 [ ] logging?
