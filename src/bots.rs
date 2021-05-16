@@ -78,3 +78,25 @@ pub fn beate(actions: Vec<String>) -> String {
         prefix, action, alternative
     )
 }
+
+pub fn cara(actions: Vec<String>) -> String {
+    if actions.len() > 0 {
+        return "".to_string();
+    }
+
+    match rand::random() {
+        true => {
+            "Cara:It's chill, I didn't really feel like doing anything either. Let's just relax"
+                .to_string()
+        }
+        false => {
+            let alternatives: Vec<&&str> = ["sleep", "snooze", "doze", "nap", "slumber", "rest"]
+                .choose_multiple(&mut rand::thread_rng(), 2)
+                .collect();
+            format!(
+                "Cara:Hmmm, maybe we can {}... Ooh ooh I know, lets {}!",
+                alternatives[0], alternatives[1]
+            )
+        }
+    }
+}
