@@ -1,4 +1,5 @@
 use chrono::Utc;
+use std::collections::HashMap;
 use std::fmt;
 use std::io::prelude::*;
 use std::io::{stdout, BufReader, Stdout, Write};
@@ -32,16 +33,19 @@ pub fn run() {
 
     let mut msg_buf = Buf::init();
     let mut msg_log: Vec<Msg> = Vec::new();
+    let mut colourmap: HashMap<String, String> = HashMap::new();
+    colourmap.insert("You".to_string(), color::Red.fg_str().to_string());
 
     loop {
         //Get terminal dimensions
         let (width, height) = terminal_size().expect("Failed to get terminal size");
 
         //Poll the server
-        poll_server(&mut reader, &mut msg_log);
+        poll_server(&mut reader, &mut msg_log, &mut colourmap);
 
         //Draw the screen
-        redraw(&mut stdout, height, width, &msg_buf, &msg_log).expect("Failed to write");
+        redraw(&mut stdout, height, width, &msg_buf, &msg_log, &colourmap)
+            .expect("Failed to write");
 
         //Handle input
         if let Some(action) = handle_input(&mut stdin, &mut msg_buf) {
@@ -58,15 +62,21 @@ pub fn run() {
     write!(stdout, "{}{}", cursor::Goto(1, 1), clear::All).expect("Failed to clear the terminal");
 }
 
-fn poll_server(reader: &mut BufReader<TcpStream>, msg_log: &mut Vec<Msg>) {
+fn poll_server(
+    reader: &mut BufReader<TcpStream>,
+    msg_log: &mut Vec<Msg>,
+    colourmap: &mut HashMap<String, String>,
+) {
     let mut buffer = String::with_capacity(1024);
 
     match BufRead::read_line(reader, &mut buffer) {
         Ok(_) => match buffer.find(":") {
             Some(i) => {
                 let (author, body) = buffer.split_at(i + 1);
+                let author_string = String::from(author.trim_end_matches(":"));
+                colour_author(author_string.clone(), colourmap);
                 msg_log.push(Msg {
-                    author: String::from(author.trim_end_matches(":")),
+                    author: author_string,
                     time: timestamp(),
                     body: String::from(body),
                 });
@@ -83,6 +93,7 @@ fn redraw(
     width: u16,
     msg_buf: &Buf,
     msg_log: &Vec<Msg>,
+    colourmap: &HashMap<String, String>,
 ) -> std::io::Result<()> {
     //TODO: return early if term is too small?
 
@@ -96,7 +107,9 @@ fn redraw(
             "{}{} {}{}{}{}",
             style::Bold,
             msg.time,
-            color::Fg(color::Red),
+            colourmap //get author's colour, default to Fg
+                .get(&msg.author)
+                .unwrap_or(&color::White.fg_str().to_string()),
             msg.author,
             color::Fg(color::White), //remove formatting before moving on
             style::Reset,
@@ -149,6 +162,25 @@ fn handle_input(keys: &mut Keys<termion::AsyncReader>, msg_buf: &mut Buf) -> Opt
         }
     }
     return None;
+}
+
+fn colour_author(author: String, colourmap: &mut HashMap<String, String>) {
+    match colourmap.get(&author) {
+        Some(_) => (),
+        None => {
+            let colours = [
+                color::Red.fg_str(),
+                color::Green.fg_str(),
+                color::Yellow.fg_str(),
+                color::Blue.fg_str(),
+                color::Magenta.fg_str(),
+                color::Cyan.fg_str(),
+            ];
+            let i = colourmap.len() % colours.len();
+            let colour = colours[i];
+            colourmap.insert(author, colour.to_string());
+        }
+    }
 }
 
 fn send_message(

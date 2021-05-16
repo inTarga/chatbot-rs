@@ -12,9 +12,9 @@
     [x] better interaction
     [ ] randomize message order
     [ ] route bots' messages to each other?
-[-] colour/format chat output
+[x] colour/format chat output
     [x] basic
-    [ ] change colour per author
+    [x] change colour per author
     [x] timestamps
 [-] better error handling
 [x] dynamically resize according to term dimensions
@@ -25,7 +25,8 @@
 [x] functional tui
 [x] read in lines
 [x] clear screen on death
-[ ] use something like tokio?
+[ ] replace color::White with color::Fg?
+[ ] use async io?
 [ ] prettier divider?
 [ ] print controls?
 [ ] replace msg_buf with vec?
