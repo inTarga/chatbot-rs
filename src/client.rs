@@ -1,5 +1,6 @@
 use chrono::Utc;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::fmt;
 use std::io::prelude::*;
 use std::io::{stdout, BufReader, Stdout, Write};
@@ -145,6 +146,14 @@ fn redraw(
         }
         line_num -= 1;
     }
+
+    //fix cursor position
+    let cursor_x = lines[lines.len() - 1].len() + 1; // x position of cursor should be end of the last line, +1 converts to 1-based indexing for termion
+    write!(
+        stdout,
+        "{}",
+        cursor::Goto(cursor_x.try_into().unwrap_or_default(), height)
+    )?;
 
     stdout.flush()
 }

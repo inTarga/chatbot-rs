@@ -1,6 +1,5 @@
 [ ] generalise IP and port
 [ ] make a nice README
-[ ] fix cursor position after render
 [-] chatbots
     [x] basic implementation
     [-] multi bots
@@ -12,11 +11,12 @@
     [x] better interaction
     [ ] randomize message order
     [ ] route bots' messages to each other?
+[-] better error handling
 [x] colour/format chat output
     [x] basic
     [x] change colour per author
     [x] timestamps
-[-] better error handling
+[x] fix cursor position after render
 [x] dynamically resize according to term dimensions
 [x] handle multi-line messages
     [x] tidy the draw loop
