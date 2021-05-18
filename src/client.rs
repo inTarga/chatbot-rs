@@ -121,7 +121,7 @@ fn redraw(
     }
 
     //Prepare divider
-    lines.push(format!("{}{}", "=".repeat(width.into()), style::Reset));
+    lines.push(format!("{}{}", "─".repeat(width.into()), style::Reset));
     lines.push(format!("{}{}", style::Bold, "Type your message here:"));
 
     //Prepare message buffer
