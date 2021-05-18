@@ -147,6 +147,14 @@ fn redraw(
         line_num -= 1;
     }
 
+    //clear the rest of the screen to prevent zombie writes
+    //TODO: perhaps this can be merged into the above for loop?
+    if line_num > 1 {
+        for y in 1..=line_num {
+            write!(stdout, "{}{}", cursor::Goto(0, y), clear::CurrentLine)?;
+        }
+    }
+
     //fix cursor position
     let cursor_x = lines[lines.len() - 1].len() + 1; // x position of cursor should be end of the last line, +1 converts to 1-based indexing for termion
     write!(
