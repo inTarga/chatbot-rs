@@ -9,7 +9,7 @@
         [ ] divya
         [ ] eudora
     [x] better interaction
-    [ ] randomize message order
+    [x] randomize message order
     [ ] route bots' messages to each other?
 [-] better error handling
 [x] colour/format chat output
@@ -26,7 +26,6 @@
 [x] read in lines
 [x] clear screen on death
 [x] prettier divider
-[ ] replace color::White with color::Fg?
 [ ] use async io?
 [ ] print controls?
 [ ] replace msg_buf with vec?
