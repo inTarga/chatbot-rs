@@ -103,3 +103,15 @@ pub fn cara(actions: Vec<String>) -> String {
         }
     }
 }
+
+pub fn divya(actions: Vec<String>) -> String {
+    match actions.len() {
+        0 => format!("Divya:{}", "<3 ".repeat(30)),
+        1 => format!("Divya:eat, sleep, {}, repeat", actions[0]),
+        2 => format!("Divya:{}, sleep, {}, repeat", actions[0], actions[1]),
+        _ => format!(
+            "Divya:{}, {}, {}, repeat",
+            actions[0], actions[1], actions[2]
+        ),
+    }
+}
