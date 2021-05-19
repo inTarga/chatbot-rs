@@ -27,7 +27,15 @@ fn handle_connection(stream: &mut TcpStream) {
     let mut bot_senders = Vec::new();
     let mut bot_receivers = Vec::new();
     //Create bots
-    for bot in [bots::alice, bots::beate, bots::cara, bots::divya].iter() {
+    for bot in [
+        bots::alice,
+        bots::beate,
+        bots::cara,
+        bots::divya,
+        bots::eudora,
+    ]
+    .iter()
+    {
         let (snd_out, rcv_out): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
         let (snd_in, rcv_in): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
 

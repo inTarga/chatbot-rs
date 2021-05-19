@@ -1,17 +1,16 @@
 [ ] generalise IP and port
 [ ] make a nice README
-[-] chatbots
+[-] better error handling
+[x] chatbots
     [x] basic implementation
-    [-] multi bots
+    [x] multi bots
         [x] alice
         [x] beate
         [x] cara
         [x] divya
-        [ ] eudora
+        [x] eudora
     [x] better interaction
     [x] randomize message order
-    [ ] route bots' messages to each other?
-[-] better error handling
 [x] colour/format chat output
     [x] basic
     [x] change colour per author
@@ -27,6 +26,7 @@
 [x] clear screen on death
 [x] prettier divider
 [ ] use async io?
+[ ] route bots' messages to each other?
 [ ] print controls?
 [ ] replace msg_buf with vec?
 [ ] logging?

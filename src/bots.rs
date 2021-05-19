@@ -115,3 +115,12 @@ pub fn divya(actions: Vec<String>) -> String {
         ),
     }
 }
+
+pub fn eudora(actions: Vec<String>) -> String {
+    match actions.len() {
+        0 => "Eudora:Couldn't even think of anything? Scrub.".to_string(),
+        1 => "Eudora:One thing? Try harder.".to_string(),
+        2 => "Eudora:Hmm... Maybe I underestimated you.".to_string(),
+        _ => format!("Eudora:Wargh, {}?! I'm losing count!", actions.len()),
+    }
+}
