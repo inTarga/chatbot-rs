@@ -3,13 +3,14 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt;
 use std::io::prelude::*;
-use std::io::{stdout, BufReader, Stdout, Write};
+use std::io::{self, stdin, stdout, BufReader, Stdout, Write};
 use std::net::TcpStream;
+use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 use termion;
 use termion::event::Key;
-use termion::input::{Keys, TermRead};
+use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, color, cursor, style, terminal_size};
 
@@ -30,12 +31,22 @@ pub fn run() {
         .expect("Failed to put terminal into raw mode");
 
     //Get stdin
-    let mut stdin = termion::async_stdin().keys();
+    let stdin = stdin();
 
     let mut msg_buf = Buf::init();
     let mut msg_log: Vec<Msg> = Vec::new();
     let mut colourmap: HashMap<String, String> = HashMap::new();
     colourmap.insert("You".to_string(), color::Red.fg_str().to_string());
+
+    //Construct IO threads
+    let (io_snd_net, io_rcv) = mpsc::channel::<IOEvent>();
+    let io_snd_key = io_snd_net.clone();
+
+    thread::spawn(move || {
+        for c in stdin.keys() {
+            io_snd_key.send(IOEvent::Key(c)).unwrap(); //TODO: remove this unwrap
+        }
+    });
 
     loop {
         //Get terminal dimensions
@@ -49,12 +60,18 @@ pub fn run() {
             .expect("Failed to write");
 
         //Handle input
-        if let Some(action) = handle_input(&mut stdin, &mut msg_buf) {
-            match action {
-                Action::Quit => break,
-                Action::Clear => send_message(&mut stream, &mut msg_buf, &mut msg_log)
-                    .expect("Failed to send message"),
+        match io_rcv.try_recv() {
+            Ok(IOEvent::Key(c)) => {
+                //TODO: remove unwrap?
+                if let Some(action) = handle_input(c.unwrap(), &mut msg_buf) {
+                    match action {
+                        Action::Quit => break,
+                        Action::Clear => send_message(&mut stream, &mut msg_buf, &mut msg_log)
+                            .expect("Failed to send message"),
+                    }
+                }
             }
+            _ => (),
         }
 
         thread::sleep(Duration::from_millis(10));
@@ -166,17 +183,14 @@ fn redraw(
     stdout.flush()
 }
 
-fn handle_input(keys: &mut Keys<termion::AsyncReader>, msg_buf: &mut Buf) -> Option<Action> {
-    //TODO: handle more keys at once?
+fn handle_input(key: Key, msg_buf: &mut Buf) -> Option<Action> {
     //TODO: handle signals
-    if let Some(Ok(key)) = keys.next() {
-        match key {
-            Key::Ctrl('c') => return Some(Action::Quit),
-            Key::Char('\n') => return Some(Action::Clear),
-            Key::Char(c) => msg_buf.insert(c),
-            Key::Backspace => msg_buf.back(),
-            _ => (),
-        }
+    match key {
+        Key::Ctrl('c') => return Some(Action::Quit),
+        Key::Char('\n') => return Some(Action::Clear),
+        Key::Char(c) => msg_buf.insert(c),
+        Key::Backspace => msg_buf.back(),
+        _ => (),
     }
     return None;
 }
@@ -232,6 +246,10 @@ fn split_and_push(src: String, dst: &mut Vec<String>, width: usize) {
 
 fn timestamp() -> String {
     format!("{}", Utc::now().format("%T"))
+}
+
+enum IOEvent {
+    Key(Result<Key, io::Error>),
 }
 
 enum Action {
