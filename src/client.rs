@@ -20,9 +20,6 @@ pub fn run() {
 
     //Connect to the server
     let mut stream = TcpStream::connect("localhost:7878").expect("Failed to connect to server");
-    stream
-        .set_read_timeout(Some(Duration::from_millis(10)))
-        .expect("Failed to set read timeout");
     let mut reader = BufReader::new(stream.try_clone().expect("Failed to clone stream"));
 
     //Get raw terminal
@@ -48,19 +45,27 @@ pub fn run() {
         }
     });
 
+    thread::spawn(move || loop {
+        let mut buffer = String::with_capacity(1024);
+
+        io_snd_net
+            .send(match BufRead::read_line(&mut reader, &mut buffer) {
+                Ok(_) => IOEvent::Msg(Ok(buffer)),
+                Err(err) => IOEvent::Msg(Err(err)),
+            })
+            .unwrap()
+    });
+
     loop {
         //Get terminal dimensions
         let (width, height) = terminal_size().expect("Failed to get terminal size");
-
-        //Poll the server
-        poll_server(&mut reader, &mut msg_log, &mut colourmap);
 
         //Draw the screen
         redraw(&mut stdout, height, width, &msg_buf, &msg_log, &colourmap)
             .expect("Failed to write");
 
-        //Handle input
         match io_rcv.try_recv() {
+            //Handle input
             Ok(IOEvent::Key(c)) => {
                 //TODO: remove unwrap?
                 if let Some(action) = handle_input(c.unwrap(), &mut msg_buf) {
@@ -71,7 +76,11 @@ pub fn run() {
                     }
                 }
             }
-            _ => (),
+            //Handle new message
+            Ok(IOEvent::Msg(msg)) => {
+                poll_server(msg.unwrap(), &mut msg_log, &mut colourmap);
+            }
+            _ => (), //TODO: handle error cases?
         }
 
         thread::sleep(Duration::from_millis(10));
@@ -80,29 +89,20 @@ pub fn run() {
     write!(stdout, "{}{}", cursor::Goto(1, 1), clear::All).expect("Failed to clear the terminal");
 }
 
-fn poll_server(
-    reader: &mut BufReader<TcpStream>,
-    msg_log: &mut Vec<Msg>,
-    colourmap: &mut HashMap<String, String>,
-) {
-    let mut buffer = String::with_capacity(1024);
-
-    match BufRead::read_line(reader, &mut buffer) {
-        Ok(_) => match buffer.find(":") {
-            Some(i) => {
-                let (author, body) = buffer.split_at(i + 1);
-                let author_string = String::from(author.trim_end_matches(":"));
-                colour_author(author_string.clone(), colourmap);
-                msg_log.push(Msg {
-                    author: author_string,
-                    time: timestamp(),
-                    body: String::from(body),
-                });
-            }
-            None => (), //TODO: log?
-        },
-        _ => (), //TODO: log?
-    }
+fn poll_server(raw_msg: String, msg_log: &mut Vec<Msg>, colourmap: &mut HashMap<String, String>) {
+    match raw_msg.find(":") {
+        Some(i) => {
+            let (author, body) = raw_msg.split_at(i + 1);
+            let author_string = String::from(author.trim_end_matches(":"));
+            colour_author(author_string.clone(), colourmap);
+            msg_log.push(Msg {
+                author: author_string,
+                time: timestamp(),
+                body: String::from(body),
+            });
+        }
+        None => (), //TODO: log?
+    };
 }
 
 fn redraw(
@@ -250,6 +250,7 @@ fn timestamp() -> String {
 
 enum IOEvent {
     Key(Result<Key, io::Error>),
+    Msg(Result<String, io::Error>),
 }
 
 enum Action {
