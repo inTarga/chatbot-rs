@@ -18,19 +18,19 @@ pub fn run() {
     println!("{}", clear::All);
 
     //Connect to the server
-    let mut stream = TcpStream::connect("localhost:7878").expect("Failed to connect to server");
+    let stream = TcpStream::connect("localhost:7878").expect("Failed to connect to server");
     let mut reader = BufReader::new(stream.try_clone().expect("Failed to clone stream"));
 
     //Get raw terminal
-    let mut stdout = stdout()
+    let stdout = stdout()
         .into_raw_mode()
         .expect("Failed to put terminal into raw mode");
 
     //Get stdin
     let stdin = stdin();
 
-    let mut msg_buf = Buf::init();
-    let mut msg_log: Vec<Msg> = Vec::new();
+    let msg_buf = Buf::init();
+    let msg_log: Vec<Msg> = Vec::new();
     let mut colourmap: HashMap<String, String> = HashMap::new();
     colourmap.insert("You".to_string(), color::Red.fg_str().to_string());
 
@@ -55,6 +55,18 @@ pub fn run() {
             .unwrap()
     });
 
+    //Handle IO events as they are received from the threads
+    handle_events(io_rcv, stdout, stream, msg_buf, msg_log, colourmap);
+}
+
+fn handle_events(
+    events: mpsc::Receiver<IOEvent>,
+    mut stdout: RawTerminal<Stdout>,
+    mut stream: TcpStream,
+    mut msg_buf: Buf,
+    mut msg_log: Vec<Msg>,
+    mut colourmap: HashMap<String, String>,
+) {
     loop {
         //Get terminal dimensions
         let (width, height) = terminal_size().expect("Failed to get terminal size");
@@ -67,7 +79,7 @@ pub fn run() {
             //Handle input
             Ok(IOEvent::Key(c)) => {
                 //TODO: remove unwrap?
-                if let Some(action) = handle_input(c.unwrap(), &mut msg_buf) {
+                if let Some(action) = process_key(c.unwrap(), &mut msg_buf) {
                     match action {
                         Action::Quit => break,
                         Action::Clear => send_message(&mut stream, &mut msg_buf, &mut msg_log)
@@ -77,7 +89,7 @@ pub fn run() {
             }
             //Handle new message
             Ok(IOEvent::Msg(msg)) => {
-                poll_server(msg.unwrap(), &mut msg_log, &mut colourmap);
+                process_msg(msg.unwrap(), &mut msg_log, &mut colourmap);
             }
             _ => (), //TODO: handle error cases?
         }
@@ -86,7 +98,20 @@ pub fn run() {
     write!(stdout, "{}{}", cursor::Goto(1, 1), clear::All).expect("Failed to clear the terminal");
 }
 
-fn poll_server(raw_msg: String, msg_log: &mut Vec<Msg>, colourmap: &mut HashMap<String, String>) {
+fn process_key(key: Key, msg_buf: &mut Buf) -> Option<Action> {
+    //TODO: handle signals
+    match key {
+        Key::Ctrl('c') => return Some(Action::Quit),
+        Key::Char('\n') => return Some(Action::Clear),
+        Key::Char(c) => msg_buf.insert(c),
+        Key::Backspace => msg_buf.back(),
+        _ => (),
+    }
+    return None;
+}
+
+fn process_msg(raw_msg: String, msg_log: &mut Vec<Msg>, colourmap: &mut HashMap<String, String>) {
+    //Find separator between author and body
     match raw_msg.find(":") {
         Some(i) => {
             let (author, body) = raw_msg.split_at(i + 1);
@@ -178,18 +203,6 @@ fn redraw(
     )?;
 
     stdout.flush()
-}
-
-fn handle_input(key: Key, msg_buf: &mut Buf) -> Option<Action> {
-    //TODO: handle signals
-    match key {
-        Key::Ctrl('c') => return Some(Action::Quit),
-        Key::Char('\n') => return Some(Action::Clear),
-        Key::Char(c) => msg_buf.insert(c),
-        Key::Backspace => msg_buf.back(),
-        _ => (),
-    }
-    return None;
 }
 
 fn colour_author(author: String, colourmap: &mut HashMap<String, String>) {
