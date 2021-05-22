@@ -1,7 +1,6 @@
 use chrono::Utc;
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::fmt;
 use std::io::prelude::*;
 use std::io::{self, stdin, stdout, BufReader, Stdout, Write};
 use std::net::TcpStream;
@@ -29,7 +28,8 @@ pub fn run() {
     //Get stdin
     let stdin = stdin();
 
-    let msg_buf = Buf::init();
+    //Initialise state
+    let msg_buf: Vec<char> = Vec::new();
     let msg_log: Vec<Msg> = Vec::new();
     let mut colourmap: HashMap<String, String> = HashMap::new();
     colourmap.insert("You".to_string(), color::Red.fg_str().to_string());
@@ -63,7 +63,7 @@ fn handle_events(
     events: mpsc::Receiver<IOEvent>,
     mut stdout: RawTerminal<Stdout>,
     mut stream: TcpStream,
-    mut msg_buf: Buf,
+    mut msg_buf: Vec<char>,
     mut msg_log: Vec<Msg>,
     mut colourmap: HashMap<String, String>,
 ) {
@@ -98,13 +98,15 @@ fn handle_events(
     write!(stdout, "{}{}", cursor::Goto(1, 1), clear::All).expect("Failed to clear the terminal");
 }
 
-fn process_key(key: Key, msg_buf: &mut Buf) -> Option<Action> {
+fn process_key(key: Key, msg_buf: &mut Vec<char>) -> Option<Action> {
     //TODO: handle signals
     match key {
         Key::Ctrl('c') => return Some(Action::Quit),
         Key::Char('\n') => return Some(Action::Clear),
-        Key::Char(c) => msg_buf.insert(c),
-        Key::Backspace => msg_buf.back(),
+        Key::Char(c) => msg_buf.push(c),
+        Key::Backspace => {
+            msg_buf.pop();
+        }
         _ => (),
     }
     return None;
@@ -131,7 +133,7 @@ fn redraw(
     stdout: &mut RawTerminal<Stdout>,
     height: u16,
     width: u16,
-    msg_buf: &Buf,
+    msg_buf: &Vec<char>,
     msg_log: &Vec<Msg>,
     colourmap: &HashMap<String, String>,
 ) -> std::io::Result<()> {
@@ -164,7 +166,7 @@ fn redraw(
     lines.push(format!("{}{}", style::Bold, "Type your message here:"));
 
     //Prepare message buffer
-    split_and_push(format!("{}", msg_buf), &mut lines, usize::from(width));
+    split_and_push(msg_buf.iter().collect(), &mut lines, usize::from(width));
 
     let mut line_num = height; //line number we're drawing at, start from bottom
 
@@ -226,13 +228,13 @@ fn colour_author(author: String, colourmap: &mut HashMap<String, String>) {
 
 fn send_message(
     stream: &mut TcpStream,
-    msg_buf: &mut Buf,
+    msg_buf: &mut Vec<char>,
     msg_log: &mut Vec<Msg>,
 ) -> std::io::Result<()> {
     let msg = Msg {
         author: String::from("You"),
         time: timestamp(),
-        body: String::from(format!("{}", msg_buf)),
+        body: msg_buf.iter().collect(),
     };
 
     stream.write(msg.body.as_bytes())?;
@@ -272,44 +274,4 @@ struct Msg {
     author: String,
     time: String,
     body: String,
-}
-
-struct Buf {
-    buffer: [char; 1024],
-    head: usize,
-}
-
-impl Buf {
-    fn init() -> Buf {
-        Buf {
-            buffer: [' '; 1024],
-            head: 0,
-        }
-    }
-
-    //TODO: handle overflow
-    fn insert(&mut self, c: char) {
-        self.buffer[self.head] = c;
-        self.head += 1;
-    }
-
-    //TODO: handle underflow
-    fn back(&mut self) {
-        self.head -= 1;
-        self.buffer[self.head] = ' ';
-    }
-
-    fn clear(&mut self) {
-        for i in 0..(self.head) {
-            self.buffer[i] = ' ';
-        }
-        self.head = 0;
-    }
-}
-
-impl fmt::Display for Buf {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let out = &self.buffer[0..self.head];
-        write!(f, "{}", out.into_iter().collect::<String>())
-    }
 }
