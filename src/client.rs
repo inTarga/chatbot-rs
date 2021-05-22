@@ -7,7 +7,6 @@ use std::io::{self, stdin, stdout, BufReader, Stdout, Write};
 use std::net::TcpStream;
 use std::sync::mpsc;
 use std::thread;
-use std::time::Duration;
 use termion;
 use termion::event::Key;
 use termion::input::TermRead;
@@ -41,7 +40,7 @@ pub fn run() {
 
     thread::spawn(move || {
         for c in stdin.keys() {
-            io_snd_key.send(IOEvent::Key(c)).unwrap(); //TODO: remove this unwrap
+            io_snd_key.send(IOEvent::Key(c)).unwrap();
         }
     });
 
@@ -64,7 +63,7 @@ pub fn run() {
         redraw(&mut stdout, height, width, &msg_buf, &msg_log, &colourmap)
             .expect("Failed to write");
 
-        match io_rcv.try_recv() {
+        match events.recv() {
             //Handle input
             Ok(IOEvent::Key(c)) => {
                 //TODO: remove unwrap?
@@ -82,8 +81,6 @@ pub fn run() {
             }
             _ => (), //TODO: handle error cases?
         }
-
-        thread::sleep(Duration::from_millis(10));
     }
 
     write!(stdout, "{}{}", cursor::Goto(1, 1), clear::All).expect("Failed to clear the terminal");

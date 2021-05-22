@@ -25,7 +25,6 @@
 [x] read in lines
 [x] clear screen on death
 [x] prettier divider
-[ ] use async io?
 [ ] route bots' messages to each other?
 [ ] print controls?
 [ ] replace msg_buf with vec?
