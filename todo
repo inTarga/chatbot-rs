@@ -1,5 +1,5 @@
-[ ] generalise IP and port
 [ ] make a nice README
+[x] generalise IP and port
 [x] better error handling
 [x] chatbots
     [x] basic implementation

@@ -12,12 +12,12 @@ use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, color, cursor, style, terminal_size};
 
-pub fn run() {
+pub fn run(address: &String) {
     //Clear screen
     println!("{}", clear::All);
 
     //Connect to the server
-    let stream = TcpStream::connect("localhost:7878").expect("Failed to connect to server");
+    let stream = TcpStream::connect(address).expect("Failed to connect to server");
     let mut reader = BufReader::new(stream.try_clone().expect("Failed to clone stream"));
 
     //Get raw terminal
