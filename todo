@@ -1,6 +1,6 @@
 [ ] generalise IP and port
 [ ] make a nice README
-[-] better error handling
+[x] better error handling
 [x] chatbots
     [x] basic implementation
     [x] multi bots

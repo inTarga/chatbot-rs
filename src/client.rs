@@ -77,9 +77,9 @@ fn handle_events(
 
         match events.recv() {
             //Handle input
-            Ok(IOEvent::Key(c)) => {
-                //TODO: remove unwrap?
-                if let Some(action) = process_key(c.unwrap(), &mut msg_buf) {
+            Ok(IOEvent::Key(x)) => {
+                let key = x.expect("Failed to read stdin key");
+                if let Some(action) = process_key(key, &mut msg_buf) {
                     match action {
                         Action::Quit => break,
                         Action::Clear => send_message(&mut stream, &mut msg_buf, &mut msg_log)
@@ -88,8 +88,9 @@ fn handle_events(
                 }
             }
             //Handle new message
-            Ok(IOEvent::Msg(msg)) => {
-                process_msg(msg.unwrap(), &mut msg_log, &mut colourmap);
+            Ok(IOEvent::Msg(x)) => {
+                let msg = x.expect("Failed to read TCP stream");
+                process_msg(msg, &mut msg_log, &mut colourmap);
             }
             _ => (), //TODO: handle error cases?
         }
